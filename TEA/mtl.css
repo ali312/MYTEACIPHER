@@ -1,0 +1,176 @@
+/* Movable Type Ltd general stylesheet */
+
+body {
+
+
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 75%;  /* adjust from default 16px (!) to 9pt (@ 96ppi) */
+    line-height: 1.6;
+
+    background: #E2EBF5;
+    color: #333333;
+}
+
+h1 {  /* page title */
+    font: bold 4em Helvetica, "Times New Roman", Times, serif;
+    margin-top:    0;
+    margin-bottom: 0;
+}
+
+h2 {  /* section / sub-head */
+    font: 2.5em Impact, Tahoma, Arial, Helvetica, sans-serif;
+    color: #42aaff;
+}
+
+h3 {  /* top-level 'content' header */
+    font-size: 1.5em;
+    color: black;
+}
+
+h4 {  /* second-level 'content' header (not currently used?) */
+    font-size: 1.2em;
+    font-style: italic;
+    color: black;
+}
+
+p {
+    margin-top:    0.8em;
+    margin-bottom: 0.8em;
+}
+
+table {
+    border-collapse: collapse;
+}
+table tr {
+    vertical-align: baseline;
+}
+table td {
+    padding-right: 0.4em;  /* give all tables some spacing between cells */
+}
+
+ul {
+    margin-top:   -0.5em;
+    margin-bottom: 0.5em;
+    margin-left:   3.2em;
+    margin-right:    0em; 
+    list-style-type: disc;
+    list-style-image: url(images/listbullet.gif);
+    list-style-position: outside;
+}
+
+img.right {
+    float: right;
+}
+img.floatRight {
+    float: right;
+}
+img.floatLeft {
+    float: left;
+}
+
+a {
+    color: gray;  /* brick red */
+    font-weight: bold;
+    text-decoration: none;
+}
+
+a img {
+    border: 0;
+}
+
+small {
+    font-size: 66%;
+}
+
+a:visited {
+    font-weight: normal;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* over-ride 'a' when inside h2 */
+h2 a {
+    color: gray;
+    font-weight: normal;
+}
+/* over-ride 'a:visited' when inside h2 */
+h2 a:visited {
+    color: gray;
+}
+
+.margin {
+    margin-left: -150px;
+}
+
+tr.tableRule td {
+    border-top: 2px solid #CCCCCC;
+}
+
+/* scripts pages */
+
+pre {
+    font-family: "Lucida Console", "Courier New", Courier, monospace;
+    font-size: 0.8em;
+    line-height: 1.2;
+    margin-left: 1cm;
+    margin-top:0;
+}
+
+.note {
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.header {
+    padding-top: 20pt;
+    margin: 0 auto 0;
+    max-width:760px;
+    min-width:460px;
+    height: 100pt;
+    background: #42aaff;
+    overflow:auto;
+}
+span.code { /* in-line code frags */
+    font-family: "Lucida Console", "Courier New", Courier, monospace;
+    font-size: 0.9em;
+}
+
+#content {
+    background-color:#FDFEFE;
+    margin: 0 auto 0;
+    /*padding:20px;*/
+    max-width:760px;
+    min-width:460px;
+    overflow:auto;
+}
+
+label.error       { color: #990000; font-style: italic; margin-left: 1em; }
+input.error       { border: 1px dotted #990000; }
+
+span.rtl { /* obfuscate email */
+  unicode-bidi: bidi-override; 
+  direction: rtl; 
+  white-space: nowrap;
+  }
+
+#footer {
+    background: #42aaff;
+    overflow:auto;
+    color: white;
+    padding: 5px 0 10px;
+    max-width:760px;
+    min-width:460px;
+}
+#footer table {
+    margin:0 auto;
+    width:100%;
+}
+#footer table a{
+    text-decoration:none;
+    color: white;
+}
+#footer table a:hover{
+    text-decoration:underline;
+}

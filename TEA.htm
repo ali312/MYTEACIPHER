@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!-- saved from url=(0046)http://www.movable-type.co.uk/scripts/tea.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>JavaScript Implementation of  TEA Tiny Encryption Algorithm </title>
+
+<meta name="author" content="Anton Kuznetsov, 2014">
+<meta name="keywords" content=" tiny encryption algorithm feistel cipher javascript">
+<link href="./TEA/mtl.css" rel="stylesheet" type="text/css">
+<script src="base64.js">/* Base64 encoding */</script>
+<script src="utf8.js">/* UTF-8 encoding */</script>
+<style type="text/css">
+pre {
+    font-family: "Lucida Console", "Courier New", Courier, monospace;
+    line-height: 1.2;
+    margin-left: 1cm;
+}
+</style>
+<script type="text/javascript">
+
+//
+// 'Extended' Tiny Encryption Algorithm
+//
+
+
+// use (16 chars of) 'password' to encrypt 'plaintext'
+
+function encrypt(plaintext, password) {
+  var v = new Array(2), k = new Array(4), s = "", i;
+
+  plaintext = Utf8.encode(plaintext);  // use escape() so only have single-byte chars to encode 
+
+  // build key directly from 1st 16 chars of password
+  for (var i=0; i<4; i++) k[i] = Str4ToLong(Utf8.encode(password).slice(i*4,(i+1)*4));
+  for (i=0; i<plaintext.length; i+=8) {  // encode plaintext into s in 64-bit (8 char) blocks
+    v[0] = Str4ToLong(plaintext.slice(i,i+4));  // ... note this is 'electronic codebook' mode
+    v[1] = Str4ToLong(plaintext.slice(i+4,i+8));
+    codeTEA(v, k);
+    s += LongToStr4(v[0]) + LongToStr4(v[1]);
+  }
+
+  return Base64.encode(s);
+  // note: if plaintext or password are passed as string objects, rather than strings, this
+  // function will throw an 'Object doesn't support this property or method' error
+}
+
+// use (16 chars of) 'password' to decrypt 'ciphertext' with TEA
+
+function decrypt(ciphertext, password) {
+  var v = new Array(2), k = new Array(4), s = "", i;
+
+  for (var i=0; i<4; i++) k[i] = Str4ToLong(Utf8.encode(password).slice(i*4,(i+1)*4));
+
+  ciphertext = Base64.decode(ciphertext);
+  for (i=0; i<ciphertext.length; i+=8) {  // decode ciphertext into s in 64-bit (8 char) blocks
+    v[0] = Str4ToLong(ciphertext.slice(i,i+4));
+    v[1] = Str4ToLong(ciphertext.slice(i+4,i+8));
+    decodeTEA(v, k);
+    s += LongToStr4(v[0]) + LongToStr4(v[1]);
+  }
+
+  // strip trailing null chars resulting from filling 4-char blocks:
+  s = s.replace(/\0+$/, '');
+
+  return Utf8.decode(s);
+}
+
+
+function code(v, k) {
+  // Extended TEA: this is the 1997 revised version of Needham & Wheeler's algorithm
+  // params: v[2] 64-bit value block; k[4] 128-bit key
+  var y = v[0], z = v[1];
+  var delta = 0x9E3779B9, limit = delta*32, sum = 0;
+
+  while (sum != limit) {
+    y += (z<<4 ^ z>>>5)+z ^ sum+k[sum & 3];
+    sum += delta;
+    z += (y<<4 ^ y>>>5)+y ^ sum+k[sum>>>11 & 3];
+    // note: unsigned right-shift '>>>' is used in place of original '>>', due to lack 
+    // of 'unsigned' type declaration in JavaScript (thanks to Karsten Kraus for this)
+  }
+  v[0] = y; v[1] = z;
+}
+
+function decode(v, k) {
+  var y = v[0], z = v[1];
+  var delta = 0x9E3779B9, sum = delta*32;
+
+  while (sum != 0) {
+    z -= (y<<4 ^ y>>>5)+y ^ sum+k[sum>>>11 & 3];
+    sum -= delta;
+    y -= (z<<4 ^ z>>>5)+z ^ sum+k[sum & 3];
+  }
+  v[0] = y; v[1] = z;
+}
+
+function codeTEA(v, k) {
+    var v0=v[0], v1=v[1], sum=0, i;           /* set up */
+    var delta=0x9e3779b9;                     /* a key schedule constant */
+    var k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
+    for (i=0; i < 32; i++) {                       /* basic cycle start */
+        sum += delta;
+        v0 += ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>>5) + k1);
+        v1 += ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>>5) + k3);
+    }                                              /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+
+function decodeTEA(v, k) {
+    var v0=v[0], v1=v[1], sum=0xC6EF3720, i;       /* set up */
+    var delta=0x9e3779b9;                          /* a key schedule constant */
+    var k0=k[0], k1=k[1], k2=k[2], k3=k[3];        /* cache key */
+    for (i=0; i<32; i++) {                              /* basic cycle start */
+        v1 -= ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>>5) + k3);
+        v0 -= ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>>5) + k1);
+        sum -= delta;                                   
+    }                                                   /* end cycle */
+    v[0]=v0; v[1]=v1;
+}
+// supporting functions
+
+function Str4ToLong(s) {  // convert 4 chars of s to a numeric long
+  var v = 0;
+  for (var i=0; i<4; i++) v |= s.charCodeAt(i) << i*8;
+  return isNaN(v) ? 0 : v;
+}
+
+function LongToStr4(v) {  // convert a numeric long to 4 char string
+  var s = String.fromCharCode(v & 0xFF, v>>8 & 0xFF, v>>16 & 0xFF, v>>24 & 0xFF);
+  return s;
+}
+
+function escCtrlCh(str) {  // escape control chars which might cause problems with encrypted texts
+  return str.replace(/[\0\t\n\v\f\r\xa0'"!]/g, function(c) { return '!' + c.charCodeAt(0) + '!'; });
+}
+
+function unescCtrlCh(str) {  // unescape potentially problematic nulls and control characters
+  return str.replace(/!\d\d?\d?!/g, function(c) { return String.fromCharCode(c.slice(1,-1)); });
+}
+/*
+function crack(plaintext, ciphertext) {
+  var currentdate = new Date(); 
+  var datetime =   "" + currentdate.getDate() + "/"
+                  + (currentdate.getMonth()+1)  + "/" 
+                  + currentdate.getFullYear() + " @ "  
+                  + currentdate.getHours() + ":"  
+                  + currentdate.getMinutes() + ":" 
+                  + currentdate.getSeconds();
+  var result = "";
+  var 
+  while (result != ciphertext) {
+
+  }
+
+  alert('Brute force started at '+datetime);
+  return 'lalka';
+}*/
+
+</script>
+</head>
+
+<body>
+  <div class = "header">
+    <center>
+    <tr> 
+      <td  valign="bottom"><a href="http://vk.com/sapphire_id"><img src="logo.png" alt="Movable Type Home Page"></a></td>
+    </tr>
+  </center>
+  </div>
+<table id = "content" width="100%" border="0" cellspacing="0" cellpadding="0">
+  <tbody>
+  <tr> 
+    <td id="margin">&nbsp;</td>
+    <td id="pageContent"> <p>&nbsp;</p>
+      <h2>Classic TEA</h2>
+      <p>Только 128 бит (16 символов) ключа будут использованы для шифрования. 
+        Зашифрованный текст представляется в формате Base-64.
+       <a href="http://ru.wikipedia.org/wiki/TEA">Tiny 
+        Encryption Algorithm</a> (TEA).</p>
+      <form name="f" action="http://www.movable-type.co.uk/scripts/none!">
+        <table>
+          <tbody><tr> 
+            <td>Password:</td>
+            <td><input type="text" name="pw" size="16" value="supadupapassword"></td>
+          </tr>
+          <tr> 
+            <td>Plaintext:</td>
+            <td><input type="text" name="pt" size="60" value="highly secret"></td>
+          </tr>
+          <tr> 
+            <td><input type="button" value="Encrypt it:" onclick="f.encrypted.value = encrypt(f.pt.value, f.pw.value)"></td>
+            <td><input type="text" name="encrypted" size="60"></td>
+          </tr>
+          <tr> 
+            <td><input type="button" value="Decrypt it" onclick="f.decrypted.value = decrypt(f.encrypted.value, f.pw.value)"></td>
+            <td><input type="text" name="decrypted" size="60"></td>
+          </tr>
+          <!--
+          <tr> 
+            <td><input type="button" value="Crack it" onclick="f.cracked.value = crack()"></td>
+            <td><input type="text" name="cracked" size="60"></td>
+          </tr>
+          -->
+        </tbody></table>
+      </form></td>
+  </tr>
+  <tr> 
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  
+</tbody></table>
+<center>
+  <div id="footer">
+      <table>
+        <tr>
+          <td>&copy; 2014 The Light Prj. .</td>
+          <td>
+          </td>
+          <td class="right"><a href="http://vk.com/sapphire_id">Kuznetsov. A.G.</a></td>
+        </tr>
+      </table>
+  </div>
+</center>
+<script src="./TEA/urchin.js" type="text/javascript"></script>
+<script type="text/javascript"> _uacct = "UA-966502-1"; urchinTracker(); </script>
+</body></html>
